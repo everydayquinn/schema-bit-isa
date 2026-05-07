@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.db
+*_TEST_REPORT.md
+TEST_REPORT.md
