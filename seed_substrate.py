@@ -25,6 +25,8 @@ NAMESPACES = [
      "prog:countdown"),
     ("step:", "execution-step facts (one per executed instruction at runtime)",
      "step:countdown:000003"),
+    ("sub:",  "subroutine-level facts (one per declared code label)",
+     "sub:inc_a"),
 ]
 
 
@@ -49,15 +51,35 @@ PREDICATES = [
     ("HAS_BYTES",    "insn", "literal", "one",
      "raw byte hex (lowercase, no separators)",
      ["insn:countdown:0x02 HAS_BYTES 3f"]),
-    ("IN_PROGRAM",   "insn", "prog",    "one",
-     "instruction belongs to this program",
-     ["insn:countdown:0x02 IN_PROGRAM prog:countdown"]),
+    ("IN_PROGRAM",   "insn|sub", "prog", "one",
+     "instruction or subroutine belongs to this program",
+     ["insn:countdown:0x02 IN_PROGRAM prog:countdown",
+      "sub:inc_a IN_PROGRAM prog:probe_jsr_rts"]),
+    ("STARTS_AT",    "sub", "literal", "one",
+     "subroutine starts at this load address (0xHHHH)",
+     ["sub:inc_a STARTS_AT 0x0700"]),
+    ("CALLS_SUB",    "insn", "ref", "one",
+     "JSR instruction whose operand resolves to a declared label "
+     "(subject = call site, object = sub:NAME)",
+     ["insn:probe_jsr_rts:0x0600 CALLS_SUB sub:inc_a"]),
+    ("IN_SUB",       "insn", "ref", "one",
+     "instruction lies between a sub's STARTS_AT and its terminating RTS "
+     "(walk-forward rule, single-RTS subs only this session)",
+     ["insn:probe_jsr_rts:0x0700 IN_SUB sub:inc_a"]),
+    ("RETURNS",      "insn", "ref", "one",
+     "RTS that terminates the named subroutine",
+     ["insn:probe_jsr_rts:0x0701 RETURNS sub:inc_a"]),
     ("HAS_MD5",      "prog", "literal", "one",
      "md5 of program source as hex",
      ["prog:countdown HAS_MD5 abc123..."]),
     ("INGESTED_AT",  "prog", "literal", "one",
      "ISO-8601 timestamp when this program was first populated",
      ["prog:countdown INGESTED_AT 2026-05-06T15:00:00.000"]),
+    ("ENTRY_ADDR",   "prog", "literal", "one",
+     "program's entry address as 0xHHHH hex string; derive layer reads "
+     "this to auto-promote sub:<prog>:main when no explicit label is "
+     "declared at the entry point",
+     ["prog:probe_jsr_rts ENTRY_ADDR 0x0600"]),
 
     # ---- runtime predicates (cpu_4bit_traveler / sim_6502) ----
     ("STEP_SEQ",     "step", "literal", "one",
