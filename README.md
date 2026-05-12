@@ -6,6 +6,33 @@ The 4-bit CPU lives in [schema-bit-cpu](https://github.com/everydayquinn/schema-
 
 The duplication is explicit and intentional — same artifact, two relations. `schema-bit-cpu` is *the CPU alone*. `schema-bit-isa` is *the CPU as one entry in a register-machine substrate library*. Two ways of looking at the same thing.
 
+## Shared Ontology Model
+
+This repo is one of five independent substrates that share a single **predicate vocabulary** recorded in a SQLite fact-store. They are not layers in an execution stack — none feeds another at runtime. The integration surface is the predicate ontology, not a pipeline.
+
+The five substrates:
+
+- [schema-bit-cpu](https://github.com/everydayquinn/schema-bit-cpu) — 4-bit register machine. Emits execution-trace facts (control-line firings, register/RAM mutations, T-states) into the shared predicate space. The substrate where the vocabulary first took shape.
+- [schema-bit-isa](https://github.com/everydayquinn/schema-bit-isa) *(this repo)* — 4-bit + 6502 (py65) register machines side by side. Emits normalized instruction-level facts into the shared predicate space; the vocabulary travels across two distinct ISAs.
+- [schema-bit-jvm](https://github.com/everydayquinn/schema-bit-jvm) — JVM bytecode (static, via `javap`) plus class-load runtime traces (via `-Xlog:class+load`). Stack-machine instruction facts and real-runtime observation facts.
+- [schema-bit-graph](https://github.com/everydayquinn/schema-bit-graph) — Java source via `javalang` AST. Structural facts: classes, methods, fields, calls, type references.
+- [macro-schema-dsl](https://github.com/everydayquinn/macro-schema-dsl) — planned future *consumer* of the shared fact-store (query-driven code assembly into existing fact-indexed codebases). Stake in the ground; no code yet.
+
+**Shared predicate vocabulary** (representative): `HAS_MNEMONIC`, `BRANCH`, `MEM_WRITE`, `WRITES_REG`, `AT_ADDRESS`, `IN_PROGRAM`, `INTERRUPT`, `CYCLES`, plus stack-machine specifics (`STACK_DELTA`, `READS_LOCAL`, `WRITES_LOCAL`) and source-side ones (`CALLS`, `READS_FIELD`, `IS_KIND`, `WAS_LOADED`).
+
+**What the shared ontology buys you.** A cross-substrate query like
+
+```sql
+SELECT traveler, predicate, COUNT(*) AS n
+FROM v_facts_live
+WHERE predicate IN ('HAS_MNEMONIC','BRANCH','MEM_WRITE')
+GROUP BY traveler, predicate;
+```
+
+returns rows from a 4-bit register machine, a 6502, JVM bytecode, and Java source — without modification. The substrate doesn't care; the relations are computed at query time.
+
+This repo is a **substrate-specific emitter** of facts into that shared ontology. It is not part of an execution stack — the siblings above are siblings, not layers.
+
 ## What's in here
 
 **The 4-bit CPU.** 13 opcodes, 21 control lines, microcode in SQL tables. Mirrored from `schema-bit-cpu`; full description is in that repo's README.
