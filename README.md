@@ -6,24 +6,32 @@ The 4-bit CPU lives in [schema-bit-cpu](https://github.com/everydayquinn/schema-
 
 The duplication is explicit and intentional — same artifact, two relations. `schema-bit-cpu` is *the CPU alone*. `schema-bit-isa` is *the CPU as one entry in a register-machine substrate library*. Two ways of looking at the same thing.
 
-## What this experiment explores
+## What this repository does
 
-Logging execution traces from two different instruction-set architectures — an in-house 4-bit register machine and a 6502 (driven by py65) — into the same SQLite database under similar table shapes, so the same SQL can be run against rows from either source.
+Records execution traces from two different instruction sets into the same SQLite database: an in-house 4-bit register machine (re-emits its own `state_log`) and a 6502 (driven by py65, observed both statically via disassembly and dynamically via per-step execution with optional IRQ injection).
 
-**What this repo produces.** A SQLite database (`corkboard.db`) holding rows under three source labels: `cpu_4bit` (re-emits the 4-bit CPU's `state_log` per execution step), `parser_6502` (static disassembly of `.s` files), and `sim_6502` (per-step runtime execution of the same files). Rows share column names like `traveler`, `predicate`, `subject`, `object`.
+## What it produces
 
-**How to query it.** Standard SQLite. The cross-source example query in this README — `SELECT traveler, predicate, COUNT(*)` grouped by both — returns rows for the 4-bit machine and the 6502 side by side.
+A SQLite database (`corkboard.db`) with rows under three source labels:
+
+- `cpu_4bit` — 4-bit CPU execution steps written into the shared table shape
+- `parser_6502` — static disassembly entries (mnemonic, address, program, bytes)
+- `sim_6502` — per-step runtime entries (instruction at address, register writes, memory reads/writes, branches, interrupts)
+
+Rows use shared column names: `traveler`, `predicate`, `subject`, `object`.
+
+## What it explores
+
+Comparison of instruction sets: writing execution traces from a custom register machine and a real 6502 into the same SQLite table shape so the same SQL queries return rows from both. Execution trace normalization for cross-ISA comparison.
 
 ## Relation to other repositories
 
-The other repos in this account — `schema-bit-cpu`, `schema-bit-jvm`, `schema-bit-graph`, `macro-schema-dsl` — are independent experiments that also log or analyze some view of computation into SQLite.
+This repository is independent. It does not depend on or execute other repositories.
 
-The similarity is limited to:
+The other repos in this account — `schema-bit-cpu`, `schema-bit-jvm`, `schema-bit-graph`, `macro-schema-dsl` — are independent experiments that also store some view of computation in SQLite. The similarity is limited to:
 
-- they all use SQLite as the storage format
-- some use similar column names where the same concept fits (e.g. `predicate`, `subject`, `object`, `traveler`)
-
-There is **no shared architecture**. There is **no execution relationship between repos** — none calls or invokes another, none depends on another at runtime. They are different lenses on computation that happen to converge on SQLite as the storage shape.
+- shared use of SQLite as the storage format
+- overlap in column names where the same concept happens to fit (e.g. `predicate`, `subject`, `object`, `traveler`)
 
 ## What's in here
 
