@@ -6,6 +6,33 @@ The 4-bit CPU lives in [schema-bit-cpu](https://github.com/everydayquinn/schema-
 
 The duplication is explicit and intentional — same artifact, two relations. `schema-bit-cpu` is *the CPU alone*. `schema-bit-isa` is *the CPU as one entry in a register-machine substrate library*. Two ways of looking at the same thing.
 
+## What this repository does
+
+Records execution traces from two different instruction sets into the same SQLite database: an in-house 4-bit register machine (re-emits its own `state_log`) and a 6502 (driven by py65, observed both statically via disassembly and dynamically via per-step execution with optional IRQ injection).
+
+## What it produces
+
+A SQLite database (`corkboard.db`) with rows under three source labels:
+
+- `cpu_4bit` — 4-bit CPU execution steps written into the shared table shape
+- `parser_6502` — static disassembly entries (mnemonic, address, program, bytes)
+- `sim_6502` — per-step runtime entries (instruction at address, register writes, memory reads/writes, branches, interrupts)
+
+Rows use shared column names: `traveler`, `predicate`, `subject`, `object`.
+
+## What it explores
+
+Comparison of instruction sets: writing execution traces from a custom register machine and a real 6502 into the same SQLite table shape so the same SQL queries return rows from both. Execution trace normalization for cross-ISA comparison.
+
+## Relation to other repositories
+
+This repository is independent. It does not depend on or execute other repositories.
+
+The other repos in this account — `schema-bit-cpu`, `schema-bit-jvm`, `schema-bit-graph`, `macro-schema-dsl` — are independent experiments that also store some view of computation in SQLite. The similarity is limited to:
+
+- shared use of SQLite as the storage format
+- overlap in column names where the same concept happens to fit (e.g. `predicate`, `subject`, `object`, `traveler`)
+
 ## What's in here
 
 **The 4-bit CPU.** 13 opcodes, 21 control lines, microcode in SQL tables. Mirrored from `schema-bit-cpu`; full description is in that repo's README.
